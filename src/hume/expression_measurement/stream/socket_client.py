@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 import typing
 import uuid
-from websockets.legacy import client as websockets
-from websockets.legacy.client import WebSocketClientProtocol
+import websockets
+from websockets.connection import Connection
 
 from hume.core.api_error import ApiError
 
@@ -28,7 +28,7 @@ class StreamWebsocketConnection:
     def __init__(
         self,
         *,
-        websocket: WebSocketClientProtocol,
+        websocket: Connection,
         params: typing.Optional[StreamConnectOptions] = None,
         stream_window_ms: typing.Optional[float] = None,
     ):
@@ -210,9 +210,9 @@ class AsyncStreamClientWithWebsocket:
             raise ValueError("An API key is required to connect to the streaming API.")
 
         try:
-            async with websockets.connect(  # type: ignore[attr-defined]
+            async with websockets.connect(
                 "wss://api.hume.ai/v0/stream/models",
-                extra_headers={
+                additional_headers={
                     **self.client_wrapper.get_headers(include_auth=False),
                     "X-Hume-Api-Key": api_key,
                 },
@@ -224,14 +224,14 @@ class AsyncStreamClientWithWebsocket:
                     params=options,
                     stream_window_ms=stream_window_ms,
                 )
-        except websockets.exceptions.InvalidStatusCode as exc:
-            status_code: int = exc.status_code
+        except websockets.exceptions.WebSocketException as exc:
+            status_code = getattr(exc, 'status_code', None)
             if status_code == 401:
                 raise ApiError(
                     status_code=status_code,
                     body="Websocket initialized with invalid credentials.",
                 ) from exc
             raise ApiError(
-                status_code=status_code,
+                status_code=status_code if status_code else 500,
                 body="Unexpected error when initializing websocket connection.",
             ) from exc

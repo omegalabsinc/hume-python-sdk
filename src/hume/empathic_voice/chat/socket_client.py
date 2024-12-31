@@ -4,8 +4,8 @@ from contextlib import asynccontextmanager
 import json
 import typing
 import httpx
-from websockets.legacy import client as websockets
-from websockets.legacy.client import WebSocketClientProtocol as WebsocketProtocol
+import websockets
+from websockets.connection import Connection
 from json.decoder import JSONDecodeError
 
 from hume.core.websocket import (
@@ -56,7 +56,7 @@ class ChatWebsocketConnection:
     def __init__(
         self,
         *,
-        websocket: WebSocketClientProtocol,
+        websocket: Connection,
     ):
         self.websocket = websocket
 
@@ -239,20 +239,20 @@ class AsyncChatClientWithWebsocket:
         try:
             async with websockets.connect(
                 ws_uri,
-                extra_headers=self.client_wrapper.get_headers(include_auth=False),
+                additional_headers=self.client_wrapper.get_headers(include_auth=False),
                 max_size=self.DEFAULT_MAX_PAYLOAD_SIZE_BYTES,
                 max_queue=None,
             ) as protocol:
                 yield ChatWebsocketConnection(websocket=protocol)
-        except websockets.exceptions.InvalidStatusCode as exc:
-            status_code: int = exc.status_code
+        except websockets.exceptions.WebSocketException as exc:
+            status_code = getattr(exc, 'status_code', None)
             if status_code == 401:
                 raise ApiError(
                     status_code=status_code,
                     body="Websocket initialized with invalid credentials.",
                 ) from exc
             raise ApiError(
-                status_code=status_code,
+                status_code=status_code if status_code else 500,
                 body="Unexpected error when initializing websocket connection.",
             ) from exc
 
@@ -332,7 +332,7 @@ class AsyncChatClientWithWebsocket:
         try:
             async with websockets.connect(
                 ws_uri,
-                extra_headers=self.client_wrapper.get_headers(include_auth=False),
+                additional_headers=self.client_wrapper.get_headers(include_auth=False),
                 max_size=self.DEFAULT_MAX_PAYLOAD_SIZE_BYTES,
                 max_queue=None,
             ) as protocol:
@@ -345,15 +345,15 @@ class AsyncChatClientWithWebsocket:
                 yield connection
 
         # Special case authentication errors
-        except websockets.exceptions.InvalidStatusCode as exc:
-            status_code: int = exc.status_code
+        except websockets.exceptions.WebSocketException as exc:
+            status_code = getattr(exc, 'status_code', None)
             if status_code == 401:
                 raise ApiError(
                     status_code=status_code,
                     body="Websocket initialized with invalid credentials.",
                 ) from exc
             raise ApiError(
-                status_code=status_code,
+                status_code=status_code if status_code else 500,
                 body="Unexpected error when initializing websocket connection.",
             ) from exc
 
