@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 import typing
 import uuid
-import websockets
-import websockets.protocol
+from websockets.legacy import client as websockets
+from websockets.legacy.client import WebSocketClientProtocol
 
 from hume.core.api_error import ApiError
 
@@ -28,7 +28,7 @@ class StreamWebsocketConnection:
     def __init__(
         self,
         *,
-        websocket: websockets.WebSocketClientProtocol,
+        websocket: WebSocketClientProtocol,
         params: typing.Optional[StreamConnectOptions] = None,
         stream_window_ms: typing.Optional[float] = None,
     ):
@@ -216,6 +216,8 @@ class AsyncStreamClientWithWebsocket:
                     **self.client_wrapper.get_headers(include_auth=False),
                     "X-Hume-Api-Key": api_key,
                 },
+                max_size=2**24,
+                max_queue=None,
             ) as protocol:
                 yield StreamWebsocketConnection(
                     websocket=protocol,

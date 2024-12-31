@@ -4,7 +4,7 @@ from typing import AsyncContextManager, AsyncIterator, Optional
 from unittest.mock import Mock
 
 import pytest
-import websockets
+from websockets.legacy import client as websockets
 from pytest import MonkeyPatch
 
 from hume.legacy import HumeVoiceClient
@@ -44,7 +44,9 @@ def voice_client_fixture() -> HumeVoiceClient:
 @pytest.mark.voice
 class TestHumeVoiceClient:
 
-    async def test_connect_basic(self, voice_client: HumeVoiceClient, monkeypatch: MonkeyPatch) -> None:
+    async def test_connect_basic(
+        self, voice_client: HumeVoiceClient, monkeypatch: MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(websockets, "connect", mock_connect)
         async with voice_client.connect() as socket:
             assert isinstance(socket, VoiceSocket)

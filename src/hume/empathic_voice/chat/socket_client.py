@@ -4,8 +4,8 @@ from contextlib import asynccontextmanager
 import json
 import typing
 import httpx
-import websockets
-import websockets.protocol
+from websockets.legacy import client as websockets
+from websockets.legacy.client import WebSocketClientProtocol as WebsocketProtocol
 from json.decoder import JSONDecodeError
 
 from hume.core.websocket import (
@@ -56,7 +56,7 @@ class ChatWebsocketConnection:
     def __init__(
         self,
         *,
-        websocket: websockets.WebSocketClientProtocol,
+        websocket: WebSocketClientProtocol,
     ):
         self.websocket = websocket
 
@@ -205,9 +205,7 @@ class AsyncChatClientWithWebsocket:
                 query_params = query_params.add("config_id", maybe_config_id)
             maybe_config_version = options.get("config_version")
             if maybe_config_version is not None:
-                query_params = query_params.add(
-                    "config_version", maybe_config_version
-                )
+                query_params = query_params.add("config_version", maybe_config_version)
             maybe_resumed_chat_group_id = options.get("resumed_chat_group_id")
             if maybe_resumed_chat_group_id is not None:
                 query_params = query_params.add(
@@ -216,7 +214,8 @@ class AsyncChatClientWithWebsocket:
             maybe_verbose_transcription = options.get("verbose_transcription")
             if maybe_verbose_transcription is not None:
                 query_params = query_params.add(
-                    "verbose_transcription", "true" if maybe_verbose_transcription else "false"
+                    "verbose_transcription",
+                    "true" if maybe_verbose_transcription else "false",
                 )
             maybe_secret_key = options.get("secret_key")
             if maybe_secret_key is not None and api_key is not None:
@@ -242,6 +241,7 @@ class AsyncChatClientWithWebsocket:
                 ws_uri,
                 extra_headers=self.client_wrapper.get_headers(include_auth=False),
                 max_size=self.DEFAULT_MAX_PAYLOAD_SIZE_BYTES,
+                max_queue=None,
             ) as protocol:
                 yield ChatWebsocketConnection(websocket=protocol)
         except websockets.exceptions.InvalidStatusCode as exc:
@@ -334,6 +334,7 @@ class AsyncChatClientWithWebsocket:
                 ws_uri,
                 extra_headers=self.client_wrapper.get_headers(include_auth=False),
                 max_size=self.DEFAULT_MAX_PAYLOAD_SIZE_BYTES,
+                max_queue=None,
             ) as protocol:
                 await self._wrap_on_open_close(on_open)
                 connection = ChatWebsocketConnection(websocket=protocol)

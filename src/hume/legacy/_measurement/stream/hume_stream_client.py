@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator
 
-import websockets
+from websockets.legacy import client as websockets
 
 from hume.legacy._common.client_base import ClientBase
 from hume.legacy._common.protocol import Protocol
@@ -62,17 +62,25 @@ class HumeStreamClient(ClientBase):
                 extra_headers=self._get_client_headers(),
                 close_timeout=self._close_timeout,
                 open_timeout=self._open_timeout,
+                max_size=2**24,
+                max_queue=None,
             ) as protocol:
-                yield StreamSocket(protocol, list(configs), stream_window_ms=stream_window_ms)
+                yield StreamSocket(
+                    protocol, list(configs), stream_window_ms=stream_window_ms
+                )
         except websockets.exceptions.InvalidStatusCode as exc:
             status_code: int = exc.status_code
-            if status_code == 401:  # Unauthorized
+            if status_code == 401:
                 message = "HumeStreamClient initialized with invalid API key."
                 raise HumeClientException(message) from exc
-            raise HumeClientException("Unexpected error when creating streaming connection") from exc
+            raise HumeClientException(
+                "Unexpected error when creating streaming connection"
+            ) from exc
 
     @asynccontextmanager
-    async def _connect_with_configs_dict(self, configs_dict: Any) -> AsyncIterator[StreamSocket]:
+    async def _connect_with_configs_dict(
+        self, configs_dict: Any
+    ) -> AsyncIterator[StreamSocket]:
         """Connect to the streaming API with a single models configuration dict.
 
         Args:

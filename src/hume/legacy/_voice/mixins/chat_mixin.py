@@ -5,8 +5,8 @@ import urllib.parse
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, ClassVar
 
-import websockets
-import websockets.client
+from websockets.legacy import client as websockets
+from websockets.legacy.client import WebSocketClientProtocol
 
 from hume.legacy._common.client_base import ClientBase
 from hume.legacy._common.protocol import Protocol
@@ -61,6 +61,7 @@ class ChatMixin(ClientBase):
                 close_timeout=self._close_timeout,
                 open_timeout=self._open_timeout,
                 max_size=max_size,
+                max_queue=None,
             ) as protocol:
                 yield VoiceSocket(protocol)
         except websockets.exceptions.InvalidStatusCode as exc:
@@ -68,4 +69,6 @@ class ChatMixin(ClientBase):
             if status_code == 401:  # Unauthorized
                 message = "HumeVoiceClient initialized with invalid API key."
                 raise HumeClientException(message) from exc
-            raise HumeClientException("Unexpected error when creating EVI API connection") from exc
+            raise HumeClientException(
+                "Unexpected error when creating EVI API connection"
+            ) from exc

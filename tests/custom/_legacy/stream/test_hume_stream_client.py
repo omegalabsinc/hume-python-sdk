@@ -3,7 +3,7 @@ from typing import AsyncContextManager, AsyncGenerator, Optional
 from unittest.mock import Mock
 
 import pytest
-import websockets
+from websockets.legacy import client as websockets
 from pytest import MonkeyPatch
 
 from hume.legacy import HumeStreamClient, StreamSocket
@@ -38,19 +38,25 @@ def stream_client_fixture() -> HumeStreamClient:
 @pytest.mark.stream
 class TestHumeStreamClient:
 
-    async def test_connect_basic(self, stream_client: HumeStreamClient, monkeypatch: MonkeyPatch) -> None:
+    async def test_connect_basic(
+        self, stream_client: HumeStreamClient, monkeypatch: MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(websockets, "connect", mock_connect)
         configs = [FaceConfig(identify_faces=True)]
         async with stream_client.connect(configs) as socket:
             assert isinstance(socket, StreamSocket)
 
-    async def test_connect_stream_window_ms(self, stream_client: HumeStreamClient, monkeypatch: MonkeyPatch) -> None:
+    async def test_connect_stream_window_ms(
+        self, stream_client: HumeStreamClient, monkeypatch: MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(websockets, "connect", mock_connect)
         configs = [ProsodyConfig()]
         async with stream_client.connect(configs, stream_window_ms=350) as socket:
             assert socket._stream_window_ms == 350
 
-    async def test_connect_with_models_config(self, stream_client: HumeStreamClient, monkeypatch: MonkeyPatch) -> None:
+    async def test_connect_with_models_config(
+        self, stream_client: HumeStreamClient, monkeypatch: MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(websockets, "connect", mock_connect)
         configs_dict = {
             "face": {

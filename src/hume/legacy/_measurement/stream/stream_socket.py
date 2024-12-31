@@ -8,7 +8,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-from websockets.client import WebSocketClientProtocol
+from websockets.legacy.client import WebSocketClientProtocol
 
 from hume.legacy._common.utilities.config_utilities import serialize_configs
 from hume.legacy.error.hume_client_exception import HumeClientException
@@ -93,24 +93,9 @@ class StreamSocket:
         text: str,
         configs: Iterable[ModelConfigBase] | None = None,
     ) -> Any:
-        """Send text on the `StreamSocket`.
-
-        Note: This method is intended for use with a `LanguageConfig`.
-            When the socket is configured for other modalities this method will fail.
-
-        Args:
-            text (str): Text to send to the language model.
-            configs (Iterable[ModelConfigBase] | None): Iterable of model configurations.
-                If set these configurations will overwrite any configurations
-                set when initializing the `StreamSocket`.
-
-        Raises:
-            HumeClientException: If the socket is configured with a modality other than language.
-
-        Returns:
-            Any: Response from the streaming API.
-        """
-        self._validate_configs_with_model_type(LanguageConfig, "send_text", configs=configs)
+        self._validate_configs_with_model_type(
+            LanguageConfig, "send_text", configs=configs
+        )
         return await self._send_str(text, raw_text=True, configs=configs)
 
     async def send_facemesh(
@@ -138,7 +123,9 @@ class StreamSocket:
         Returns:
             Any: Response from the streaming API.
         """
-        self._validate_configs_with_model_type(FacemeshConfig, "send_facemesh", configs=configs)
+        self._validate_configs_with_model_type(
+            FacemeshConfig, "send_facemesh", configs=configs
+        )
 
         n_faces = len(landmarks)
         if n_faces > self._FACE_LIMIT:
@@ -151,7 +138,8 @@ class StreamSocket:
         n_landmarks = len(landmarks[0])
         if n_landmarks != self._N_LANDMARKS:
             raise HumeClientException(
-                f"Number of MediaPipe landmarks per face must be exactly {self._N_LANDMARKS}, " f"found {n_landmarks}."
+                f"Number of MediaPipe landmarks per face must be exactly {self._N_LANDMARKS}, "
+                f"found {n_landmarks}."
             )
         if len(landmarks[0][0]) != self._N_SPATIAL:
             raise HumeClientException(
@@ -218,7 +206,9 @@ class StreamSocket:
         try:
             response = json.loads(response_str)
         except json.JSONDecodeError as exc:
-            raise HumeClientException("Unexpected error when fetching streaming API predictions") from exc
+            raise HumeClientException(
+                "Unexpected error when fetching streaming API predictions"
+            ) from exc
 
         if "error" in response:
             error = response["error"]

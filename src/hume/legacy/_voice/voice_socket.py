@@ -9,11 +9,12 @@ from typing import Any, AsyncIterator, ClassVar
 
 try:
     from pydub import AudioSegment
+
     HAS_AUDIO_DEPENDENCIES = True
 except ModuleNotFoundError:
     HAS_AUDIO_DEPENDENCIES = False
 
-from websockets.client import WebSocketClientProtocol as WebSocket
+from websockets.legacy.client import WebSocketClientProtocol as WebSocket
 
 from hume.legacy.error.hume_client_exception import HumeClientException
 from hume.legacy._common.utilities.typing_utilities import JsonObject
@@ -105,6 +106,8 @@ class VoiceSocket:
             )
         with filepath.open("rb") as f:
             segment: AudioSegment = AudioSegment.from_file(f)
-            segment = segment.set_frame_rate(self._sample_rate).set_channels(self._num_channels)
+            segment = segment.set_frame_rate(self._sample_rate).set_channels(
+                self._num_channels
+            )
             audio_bytes = segment.raw_data
             await self._protocol.send(audio_bytes)
